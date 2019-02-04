@@ -1,9 +1,28 @@
 ---
 title: "Explore and summrize Loan data from Prosper"
 author: "Hana ALalawi"
-date: "1/26/2019"
-output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    df_print: paged
+    # theme of html document
+    # theme of code highlight                                 
+    # table of contents
+    theme       : journal            # "default", "cerulean", "journal",
+                                    # "flatly", "readable", "spacelab",
+                                    # "united", "cosmo", "lumen", "paper", 
+                                    # "sandstone", "simplex", "yeti"
+    highlight   : tango          # "default", "tango", "pygments",
+                                    # "kate",  "monochrome", "espresso",
+                                    # "zenburn", "haddock", "textmate"
+    toc         : true              # get table of content
+    toc_depth   : 3
+    toc_float   : true
+    
 ---
+
+______________
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # ALL The data package 
@@ -19,12 +38,19 @@ library(tidyr)
  library(lubridate)
 library(zoo)
 library(scales)
+library(reshape2)
+# knitr: Suppress code/messages/warnings 
+#        Set default plot options and center them
+knitr::opts_chunk$set(fig.width=9,fig.height=5,fig.path='Figs/',
+                      fig.align='center',tidy=TRUE,
+                      echo=FALSE,warning=FALSE,message=FALSE)
+
 ```
 
 
 ##**Introduction**
 
->The loan data is from Prosper, This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
+The loan data is from Prosper, This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
 The last date updated this data set is 3/11/2014.
 
 ##**The outline of this project is:**
@@ -141,7 +167,7 @@ histo_plot <- function(variable, title, xlabel,binwidth = NULL){
 ```
 
 ####The highest number of Borrowers in states.
->The BorrowerState: The two letter abbreviation of the state of the address of the borrower at the time the Listing was created.
+The BorrowerState: The two letter abbreviation of the state of the address of the borrower at the time the Listing was created.
 
 
 ```{r echo=FALSE, borrower_states }
@@ -173,13 +199,14 @@ ggplot(data = global, aes(x=long, y = lat, group = group)) +
 #####The highest number of Borrowers in Arizona, Texas, Georgia, Florida and Newyork.These states also have the highest population in USA.
 
 
->The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, Past Due (1-15 days), Past Due (16-30 days), Past Due (31-60 days),
+The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, Past Due (1-15 days), Past Due (16-30 days), Past Due (31-60 days),
 Past Due (61-90 days), and Past Due (91-120 days) 
 
 ```{r echo=FALSE, loan_status}
 remove_nulls<- na.omit(loan_data, cols="LoanStatus")
 loan_data$recod_loan_status <- recode(loan_data$LoanStatus, "c('FinalPaymentInProgress', 'Current')='Current';
-c('Past Due (1-15 days)', 'Past Due (>120 days)','Past Due (16-30 days)','Past Due (31-60 days)','Past Due (61-90 days)','Past Due (91-120 days)') = 'Past Due'")
+c('Past Due (1-15 days)', 'Past Due (>120 days)','Past Due (16-30 days)',
+'Past Due (31-60 days)','Past Due (61-90 days)','Past Due (91-120 days)') = 'Past Due'")
 
 #"c( 'Completed','Current','FinalPaymentInProgress','Defaulted')='Completed';c('Cancelled', 'Past Due (1-15 days)','Past Due (16-30 days)','Past Due (31-60 days)','Past Due (61-90 #days)','Past Due (91-120 days)') = 'Past Due'; ('Chargedoff')='Chargedoff'")
 bar_plot_percent(loan_data$recod_loan_status, "The Loan status", "Loan status")
@@ -189,7 +216,7 @@ bar_plot_percent(loan_data$recod_loan_status, "The Loan status", "Loan status")
 
 #####This plot describe the loan status. There are many status in past due there are 6 categories the total of these is around 2%, the most borrowers trying to completed their own loans because that might expose them to paying more during the delay. 
 
->IncomeRange: The income range of the borrower at the time the listing was created.
+IncomeRange: The income range of the borrower at the time the listing was created.
 
 ```{r echo=FALSE, income}
 #Monthly brrowes income in range
@@ -203,7 +230,7 @@ flip_bar_plot(loan_data$IncomeRange," The brrowers income in range", "Income Ran
 
 #####The most borrowers income is between 25,000USD to 74,999USD.
 
->Term: The length of the loan expressed in months.
+Term: The length of the loan expressed in months.
 
 ```{r echo=FALSE, term}
 loan_data$Term <- factor(loan_data$Term)
@@ -214,17 +241,36 @@ bar_plot_percent(loan_data$Term, "length of the loan expressed in months", "Loan
 
 #####There are three term options 12 months, 36 months or 60 months. The loans with 36 length is the most liked to take with 75.2%  and then 60 length of months with 23.3% the percentage of borrwers can take loans in 12 months is 1.5% because it is short length period to complete loan.
 
->ListingCategory: The category of the listing that the borrower selected when posting their listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
+ListingCategory: The category of the listing that the borrower selected when posting their listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
 
 ```{r, echo=FALSE, category_loan}
 #convert to factor
 loan_data$ListingCategory..numeric. <- factor(loan_data$ListingCategory..numeric.)
 
 #change factoer levels
-levels(loan_data$ListingCategory..numeric.) <- c("Not Available"," Debt Consolidation"," Home Improvement", "Business","Personal Loan","Student Use", "Auto", "Other", "Baby&Adoption", "Boat","Cosmetic Procedure","Engagement Ring", "Green Loans","Household Expenses","Large Purchases","Medical/Dental",  "Motorcycle","RV", "Taxes", "Vacation", "Wedding Loans")
+levels(loan_data$ListingCategory..numeric.) <- c("Not Available",
+                                                 " Debt Consolidation",
+                                                 " Home Improvement", 
+                                                 "Business",
+                                                 "Personal Loan",
+                                                 "Student Use", 
+                                                 "Auto", "Other", 
+                                                 "Baby&Adoption", 
+                                                 "Boat",
+                                                 "Cosmetic Procedure",
+                                                 "Engagement Ring", 
+                                                 "Green Loans",
+                                                 "Household Expenses",
+                                                 "Large Purchases",
+                                                 "Medical/Dental",  
+                                                 "Motorcycle","RV", 
+                                                 "Taxes", "Vacation",
+                                                 "Wedding Loans")
 
 loan_data <- subset(loan_data, ! ListingCategory..numeric. %in% c("Not Available","Other"))
-ggplot(aes(x=reorder(ListingCategory..numeric., table(ListingCategory..numeric.)[ListingCategory..numeric.])), data = loan_data)+
+ggplot(aes(x=reorder(ListingCategory..numeric., 
+                     table(ListingCategory..numeric.)[ListingCategory..numeric.])), 
+       data = loan_data)+
   geom_bar(fill= "#91bfff",colour="#074e69") + 
   theme_minimal()+
   coord_flip()+
@@ -236,26 +282,29 @@ ggplot(aes(x=reorder(ListingCategory..numeric., table(ListingCategory..numeric.)
 #####This plot describe the loan catigories or the purpose the borrowers get the loans for it, the most purpose loan is Dept Consolidation and then home improvement.
 
 
->Recomendations: Number of recommendations the borrower had at the time the listing was created.
+Recomendations: Number of recommendations the borrower had at the time the listing was created.
 
 ```{r echo=FALSE, recomendations}
 #Recommendations
-bar_plot(loan_data$Recommendations,"The Number of recommendations", "Recommendations" )
+bar_plot(loan_data$Recommendations,"The Number of recommendations", "Recommendations")  +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 ```
 
 
 #####As we see in this plot most people comes to take a loan without any recomedations.
 
->BorrowerAPR: The Borrower's Annual Percentage Rate (APR) for the loan.
+BorrowerAPR: The Borrower's Annual Percentage Rate (APR) for the loan.
 An annual percentage rate (APR) is the annual rate charged for borrowing or earned through an investment. 
 APR is expressed as a percentage that represents the actual yearly cost of funds over the term of a loan.
 
->BrrowerRate: The Borrower's interest rate for this loan. 
+BrrowerRate: The Borrower's interest rate for this loan. 
 or intrest rate 
 
 ```{r echo=FALSE, borrowerapr}
-APR <- histo_plot(loan_data$BorrowerAPR, "The Borrower's Annual Percentage Rate (APR) for the loan ", "BorrowerAPR",0.01)
-Rate <- histo_plot(loan_data$BorrowerRate, "The Borrower's interest rate for this loan ", "Borrower Rate",0.01)
+APR <- histo_plot(loan_data$BorrowerAPR, "The Borrower's Annual Percentage Rate (APR) for the loan ", 
+                  "BorrowerAPR",0.01)
+Rate <- histo_plot(loan_data$BorrowerRate, "The Borrower's interest rate for this loan ", 
+                   "Borrower Rate",0.01)
 
 
 summary(loan_data$BorrowerAPR)
@@ -268,7 +317,7 @@ grid.arrange(APR,Rate,ncol=1)
 #####These plots are distrbuted normally, and the BorrowerAPR higher than the BorrowerRate in general. 
 
 
->TotalProsperLoans: Number of Prosper loans the borrower at the time they created this listing. 
+TotalProsperLoans: Number of Prosper loans the borrower at the time they created this listing. 
 This value will be null if the borrower had no prior loans. 
 
 ```{r echo=FALSE, borrowrloans}
@@ -279,7 +328,10 @@ loan_data$TotalProsperLoans <- factor(loan_data$TotalProsperLoans)
 
 
 loan_data.clean<- na.omit(subset(loan_data, select = c(TotalProsperLoans)))
-bar_plot_percent(loan_data$TotalProsperLoans, "Total Prosper Loans", "Total Prosper Loans")
+
+bar_plot_percent(loan_data$TotalProsperLoans, 
+                 "Total Prosper Loans", 
+                 "Total Prosper Loans")
 
 
     
@@ -288,14 +340,20 @@ bar_plot_percent(loan_data$TotalProsperLoans, "Total Prosper Loans", "Total Pros
 
 #####The 20.6% of borrowers already have one prior loan and they come to get another loan, 6% of borrowes have two loans, and 2% have three loans but more than 70% of borrowers haven't the prior loans.The ratio is low for those who can take more than one loan at the same time. Especially more than three loans are almost no less than 1%.
 
->StatedMonthlyIncome:The monthly income the borrower stated at the time the listing was created.
+StatedMonthlyIncome:The monthly income the borrower stated at the time the listing was created.
 
 ```{r echo=FALSE, StatedMonthlyIncome}
 
-beforeLog <-histo_plot(loan_data$StatedMonthlyIncome,"The borrower monthly income","StatedMonthlyIncome",1000)
+beforeLog <-histo_plot(loan_data$StatedMonthlyIncome,
+                       "The borrower monthly income",
+                       "StatedMonthlyIncome",
+                       1000)
 #long tail plot 
 
-afterLog<-histo_plot(log10(loan_data$StatedMonthlyIncome),"The borrower monthly income","StatedMonthlyIncome log10",0.05)
+afterLog<-histo_plot(log10(loan_data$StatedMonthlyIncome),
+                     "The borrower monthly income",
+                     "StatedMonthlyIncome log10",
+                     0.05)
 
 grid.arrange(beforeLog,afterLog)
 ```
@@ -303,33 +361,37 @@ grid.arrange(beforeLog,afterLog)
 
 #####The StatedMonthlyIncome in first plot with long tail and I do some transformation by taking log10 and the second plot distributed normally
 
->IsBorrowerHomeowner: A Borrower will be classified as a homowner if they have a mortgage on their credit profile or provide documentation confirming they are a homeowner.
+IsBorrowerHomeowner: A Borrower will be classified as a homowner if they have a mortgage on their credit profile or provide documentation confirming they are a homeowner.
 
 ```{r echo=FALSE, homeOwn}
 bar_plot_percent(loan_data$IsBorrowerHomeowner, "Borrower Home owner", "IsBorrowerHomeowner")
 ```
 
 
-##### The plot shows the percentage of the borrowers have their own home or not. As we see it isn't highly different between them is 2.94%. 
-the 53.38% of borrowers have a home and 46.62% haven't home.\
+##### The plot shows the percentage of the borrowers have their own home or not. As we see it isn't highly different between them is 2.94%. The 51.94% of borrowers have a home and 46.62% haven't home.\
 
->MonthlyLoanPayment: The scheduled monthly loan payment.
+MonthlyLoanPayment: The scheduled monthly loan payment.
 
 ```{r echo=FALSE, count}
 #max(loan_data$MonthlyLoanPayment)
 #870
 #min(loan_data$MonthlyLoanPayment)
 #0
-histo_plot(loan_data$MonthlyLoanPayment,"The Monthly Loan Payment","Monthly Loan Payment",30)
+histo_plot(loan_data$MonthlyLoanPayment,
+           "The Monthly Loan Payment",
+           "Monthly Loan Payment",
+           30)
 #MonthlyLoanPayment
 
 ```
 
 
->LoanOriginationQuarter:The quarter in which the loan was originated. 
+LoanOriginationQuarter:The quarter in which the loan was originated. 
 
 ```{r echo=FALSE, quarter}
-bar_plot(loan_data$LoanOriginationQuarter,"Loan Origination Quarter","Loan Origination Quarter")
+bar_plot(loan_data$LoanOriginationQuarter,
+         "Loan Origination Quarter",
+         "Loan Origination Quarter")
 ```
 
 
@@ -367,7 +429,8 @@ current loan status, borrower income, borrower employment status, borrower credi
 
 ```{r echo=FALSE, functions_2}
 
-bar_plot_bi <- function(X,Y,Fill = NULL, title, xlabel, cols= NULL){
+bar_plot_bi <- function(X,Y,Fill = NULL, title, xlabel, cols= NULL,fill_lab=NULL){
+  
   ggplot() + geom_bar(aes(x=X,y = Y,fill = Fill),
                           data = loan_data,
                           stat="identity")+
@@ -376,7 +439,7 @@ bar_plot_bi <- function(X,Y,Fill = NULL, title, xlabel, cols= NULL){
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank())+
   ggtitle(title)+
-    labs(x = xlabel)+
+    labs(x = xlabel,fill = fill_lab)+
   scale_fill_manual(values = cols)+
     theme(axis.text.x = element_text(angle = 90, hjust = 1))
   
@@ -407,13 +470,17 @@ boxplot_bi <- function(X,Y,title,Xlabel,Ylabel){
 
 
 #### Loan Status and Income Range
->IncomeRange: The income range of the borrower at the time the listing was created.
+IncomeRange: The income range of the borrower at the time the listing was created.
 The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, PastDue.
 
 ```{r echo=FALSE,LoanStatus_IncomeRange }
 #The relation between LoanStatus and IncomeRange
-cols <- c("$1-24,999" = "#00ffff", "$100,000+" = "#91bfff", "$25,000-49,999" = "#5f9ea0", "$50,000-74,999" = "#7b68ee", "$75,000-99,999" = "#074e69")
-bar_plot_bi(loan_data$recod_loan_status,loan_data$IncomeRange,loan_data$IncomeRange, "The Loan Status and Income Range", "Loan status", cols)
+cols <- c("$1-24,999" = "#00ffff",  "$100,000+" = "#91bfff", 
+          "$25,000-49,999" = "#5f9ea0","$50,000-74,999" = "#7b68ee", 
+          "$75,000-99,999" = "#074e69")
+bar_plot_bi(loan_data$recod_loan_status,loan_data$IncomeRange,
+            loan_data$IncomeRange,"The Loan Status and Income Range", 
+            "Loan status", cols)
 ```
 
 
@@ -426,8 +493,11 @@ and The borrowers with medium income which is between (25,000 USD and 74,999 USD
 ```{r echo=FALSE, category_payment}
 
 loan_data <- subset(loan_data, ! ListingCategory..numeric. %in% c("Not Available","Other"))
+
 ggplot(loan_data,aes(x=ListingCategory..numeric.,y = MonthlyLoanPayment) )+ 
-    geom_bar(position="dodge", stat="identity",fill= "#91bfff")+
+    geom_bar(position="dodge", 
+             stat="identity",
+             fill= "#91bfff")+
   theme_minimal()+
   ggtitle("The Loan purpose and Monthly loan payment")+
     labs(x = "ListingCategory ")+
@@ -442,12 +512,18 @@ ggplot(loan_data,aes(x=ListingCategory..numeric.,y = MonthlyLoanPayment) )+
 
 #### IsBorrowerHomeowner and loanStatus
 
-> EmploymentStatus: The employment status of the borrower at the time they posted the listing.
+ EmploymentStatus: The employment status of the borrower at the time they posted the listing.
 
 
 ```{r echo=FALSE, home_status}
 cols <- c("TRUE" = "#87cefa", "FALSE" = "#074e69")
-bar_plot_bi(loan_data$EmploymentStatus,loan_data$IsBorrowerHomeowner,loan_data$IsBorrowerHomeowner,"The Employment Status and BorrowerHomeowner", "Loan status", cols)
+
+bar_plot_bi(loan_data$EmploymentStatus,
+            loan_data$IsBorrowerHomeowner,
+            loan_data$IsBorrowerHomeowner,
+            "The Employment Status and BorrowerHomeowner", 
+            "Employment Status", 
+            cols, "Is Borrower Home owner" )
 
 ```
 
@@ -457,8 +533,15 @@ bar_plot_bi(loan_data$EmploymentStatus,loan_data$IsBorrowerHomeowner,loan_data$I
 
 #### Income Range and ListingCategory
 ```{r echo=FALSE, income_range_category}
-cols <- c("$1-24,999" = "#87cefa", "$100,000+" = "#91bfff", "$25,000-49,999" = "#5f9ea0", "$50,000-74,999" = "#7b68ee", "$75,000-99,999" = "#074e69")
-bar_plot_bi(loan_data$ListingCategory..numeric.,loan_data$IncomeRange,loan_data$IncomeRange,"Loan Purpose and Income Range", "The laon categories", cols)
+cols <- c("$1-24,999" = "#87cefa", 
+          "$100,000+" = "#91bfff", 
+          "$25,000-49,999" = "#5f9ea0",
+          "$50,000-74,999" = "#7b68ee", 
+          "$75,000-99,999" = "#074e69")
+bar_plot_bi(loan_data$ListingCategory..numeric.,
+            loan_data$IncomeRange,loan_data$IncomeRange,
+            "Loan Purpose and Income Range",
+            "The laon categories", cols, "Income Range")
 ```
 
 
@@ -466,12 +549,17 @@ bar_plot_bi(loan_data$ListingCategory..numeric.,loan_data$IncomeRange,loan_data$
 
 #### The BorrowerRate and AvailableBankcardCredit
 
->AvailableBankcardCredit: The total available credit via bank card at the time the credit profile was pulled.
+AvailableBankcardCredit: The total available credit via bank card at the time the credit profile was pulled.
 
 
 ```{r echo=FALSE, BorrowerRate_AvailableBankcardCredit,warning=FALSE}
 #the relation between BorrowerRate or intrest rate with AvailableBankcardCredit.
-point_plot_bi(loan_data$AvailableBankcardCredit,loan_data$BorrowerRate,'lm','red',"The BorrowerRate and AvailableBankcardCredit","Available Bank card Credit","Borrower Rate",70000)
+point_plot_bi(loan_data$AvailableBankcardCredit,
+              loan_data$BorrowerRate,'lm','red',
+              "The BorrowerRate and AvailableBankcardCredit",
+              "Available Bank card Credit",
+              "Borrower Rate",
+              70000)
 ```
 
 
@@ -483,7 +571,12 @@ point_plot_bi(loan_data$AvailableBankcardCredit,loan_data$BorrowerRate,'lm','red
 #year and loan purpose
 #StatedMonthlyIncome and MonthlyLoanPayment
 
-point_plot_bi(loan_data$StatedMonthlyIncome,loan_data$MonthlyLoanPayment,'lm','#91bfff',"The Stated Monthly Income and Monthly Loan Payment","Stated Monthly Income","Monthly Loan Payment",20000)
+point_plot_bi(loan_data$StatedMonthlyIncome,
+              loan_data$MonthlyLoanPayment,
+              'lm','#91bfff',
+              "The Stated Monthly Income and Monthly Loan Payment",
+              "Stated Monthly Income",
+              "Monthly Loan Payment",20000)
 
 ```
 
@@ -492,7 +585,7 @@ point_plot_bi(loan_data$StatedMonthlyIncome,loan_data$MonthlyLoanPayment,'lm','#
 
 
 #### The StatedMonthlyIncome and Occupation
-```{r echo=FALSE, fig.height=8, fig.width=10, occu}
+```{r echo=FALSE, occu}
 
 #StatedMonthlyIncome and Occupation
 
@@ -519,7 +612,10 @@ ggplot() + geom_bar(aes(x=Occupation, y = log10(StatedMonthlyIncome)),
 #### BorrrowerRate and Term
 ```{r, echo=FALSE, term_22}
 #BorrowerRate and term of loans
-boxplot_bi(loan_data$Term, loan_data$BorrowerRate, "The Borrower Rate and Terms of loan","Loan Terms","BorrowerRate(intrest rate)")
+boxplot_bi(loan_data$Term, 
+           loan_data$BorrowerRate, 
+           "The Borrower Rate and Terms of loan",
+           "Loan Terms","BorrowerRate(intrest rate)")
 ```
 
 
@@ -530,7 +626,8 @@ boxplot_bi(loan_data$Term, loan_data$BorrowerRate, "The Borrower Rate and Terms 
 
 ```{r echo=FALSE, fig.width=9, warning=FALSE, time}
 #split date column to year, day and month
-loan_data$newDate <- as.Date.character(loan_data$LoanOriginationDate, format='%m/%d/%Y')
+loan_data$newDate <- as.Date.character(loan_data$LoanOriginationDate)
+
 #create a new variable to store the years 
 loan_data <- loan_data %>% 
   mutate(newDate = ymd(newDate)) %>% 
@@ -551,9 +648,9 @@ year_payment()
 ```
 
 
-##### From 2008 to 2011 the monthly payment rate for loans was volatile, but the jump was in 2012 and continued to rise. Which I believe is due to the improved living and increased needs.
+##### The monthly loan payment of loans fluctuated over the years and its highest rise was in 2014 Which I believe is due to the improved living and increased needs.
 
-> ProsperRating..numeric.:The Prosper Rating assigned at the time the listing was created: 0 - N/A, 1 - HR, 2 - E, 3 - D, 4 - C, 5 - B, 6 - A, 7 - AA.  Applicable for loans originated after July 2009.
+ ProsperRating..numeric.:The Prosper Rating assigned at the time the listing was created: 0 - N/A, 1 - HR, 2 - E, 3 - D, 4 - C, 5 - B, 6 - A, 7 - AA.  Applicable for loans originated after July 2009.
 
 ```{r, echo=FALSE, warning=FALSE, year_rate}
 ggplot(loan_data, aes(year, ProsperRating..numeric.)) + 
@@ -600,8 +697,10 @@ home_year_payment <- function(){
 
   group = loan_data$IsBorrowerHomeowner
 
-ggplot(loan_data, aes(year, StatedMonthlyIncome, group = IsBorrowerHomeowner )) + 
-  geom_line( stat = 'summary', fun.y = mean ,aes(colour = group), linetype = 2) + 
+ggplot(loan_data, aes(year, StatedMonthlyIncome, 
+                      group = IsBorrowerHomeowner )) + 
+  geom_line( stat = 'summary', fun.y = mean ,
+             aes(colour = group), linetype = 2) + 
   ggtitle("The Stated Monthly Income and Borrower's home in years")+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   theme_minimal()+
@@ -620,15 +719,21 @@ home_year_payment()
 ```{r echo=FALSE, fig.width=9, multi_2,  warning=FALSE}
 
 home_status_year <- function(){
-
-  ggplot(loan_data, aes(year, EmploymentStatus, group = IsBorrowerHomeowner,colour = IsBorrowerHomeowner)) + 
-  geom_point(stat="identity", size = 3) + 
-  ggtitle("The Employment status and Borrower's home in years")+
+ggplot(loan_data, aes(IsBorrowerHomeowner, EmploymentStatus , group = year)) +
+  geom_tile(aes(fill = year), color = "white",size=0) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  ylab("ProsperRating..numeric. ") +
+  xlab("IsBorrowerHomeowner") +
   theme_minimal()+
-  labs(y = "Employment Status", x= "Years")
+  labs(fill = "Years")
 }
 
 home_status_year()
+
+
+ 
+ 
+ 
 ```
 
 
@@ -640,12 +745,14 @@ home_status_year()
 ```{r echo=FALSE, year_rate_pay, warning=FALSE}
 
 ggplot(loan_data, aes(year, MonthlyLoanPayment, group = BorrowerRate)) + 
-  geom_point(stat = "identity", size = 2, aes(fill = BorrowerRate, color = BorrowerRate )) + 
+  geom_jitter(height = 0, stat = "identity", size = 2,
+              aes( color = BorrowerRate )) + 
   ggtitle("The avergae of Monthly loan payment for loans over a year")+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   theme_minimal()+
-  labs(y = "Monthly Loan Payment ($)", x= "Years")
-
+  labs(y = "Monthly Loan Payment ($)", x= "Years")+
+    scale_color_gradient2("Borrower\nRate",
+                         midpoint = median(loan_data$BorrowerRate))
 ```
 
 
@@ -654,15 +761,20 @@ ggplot(loan_data, aes(year, MonthlyLoanPayment, group = BorrowerRate)) +
 #### The Prosper rating and intrest rate in years
 ```{r, echo=FALSE, warning=FALSE ,year_rate_2}
 year_rate_intrest <- function (){
-  ggplot(loan_data, aes(year, ProsperRating..numeric., group = year, colour = BorrowerRate )) + 
-  geom_point(stat="identity", size = 3) + 
-  ggtitle("The Prosper rating and intrest rate in years ")+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+
+  ggplot(loan_data, aes(year, ProsperRating..numeric. , group = year)) +
+  geom_tile(aes(fill = BorrowerRate), color = "white",size=0) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  ylab("ProsperRating..numeric. ") +
+  xlab("Years") +
   theme_minimal()+
-  labs(y = "Prosper Rating", x= "Years")
+  labs(fill = "Borrower Rate")+
+  scale_fill_gradient2("Borrower\nRate",
+                         midpoint = median(loan_data$BorrowerRate))
 }
 
 year_rate_intrest()
+
 ```
 
 
@@ -729,6 +841,5 @@ Before this project, I didn't know anything about loans of banks and how it work
 14. [combining factor levels](https://stackoverflow.com/questions/36568758/combining-factor-level-in-r/39937480)
 15. [bar plot](https://stackoverflow.com/questions/5208679/order-bars-in-ggplot2-bar-graph)
 16. [Remove NA](https://statistical-programming.com/na-omit-r-example/)
-
 17 .[Prosper](https://www.prosper.com/about)
 
