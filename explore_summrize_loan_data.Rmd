@@ -1,0 +1,734 @@
+---
+title: "Explore and summrize Loan data from Prosper"
+author: "Hana ALalawi"
+date: "1/26/2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# ALL The data package 
+library(ggplot2)
+library(plyr)
+library(gridExtra)
+require(maps)
+library(ggrepel)
+library(dplyr)
+library(forcats)
+library(car)
+library(tidyr)
+ library(lubridate)
+library(zoo)
+library(scales)
+```
+
+
+##**Introduction**
+
+>The loan data is from Prosper, This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
+The last date updated this data set is 3/11/2014.
+
+##**The outline of this project is:**
+#### 1. Introduction
+#### 2. Univariate Plots Section
+#### 3. Univariate Analysis
+#### 4. Bivariate Plots Section
+#### 5. Bivariate Analysis
+#### 6. Multivariate Plots Section
+#### 7. Multivariate Analysis
+#### 8. Final Plots and Summary
+#### 9. Reflection
+
+
+```{r echo=FALSE, Load_the_Data}
+#load and review the data set
+loan_data <- read.csv("prosperLoanData.csv")
+```
+
+####The structure of the dataset,
+##### The data set needs to clean up there is many NA values.
+```{r echo=FALSE, data_str}
+#str(loan_data)
+#the data set contains NA in many variables. 
+```
+
+##### Remove NA values
+```{r echo=FALSE,remove_na}
+#reomve all NA's values
+loan_data <- loan_data %>% drop_na()
+
+```
+
+####Discover the dataset, The number of columns in the data set are 81 columns
+
+
+```{r echo=FALSE, explore}
+#the number of columns
+ncol(loan_data)
+# the columns names
+names(loan_data)
+```
+
+
+```{r echo=FALSE, head}
+head(loan_data,2)
+```
+
+
+```{r echo=FALSE, summary}
+#summary of the dataset
+#summary(loan_data)
+
+```
+
+
+####Choosen Variables.
+##### 1. BorrowerState.
+##### 2. LoanStatus.
+##### 3. Term.
+##### 4. BrrowerAPR.
+##### 5. BorroerRate.
+##### 6. IncomeRange.
+##### 7. ListingCategory.
+##### 8. Recommendations.
+##### 9. TotalProsperLoans.
+##### 10. StatedMonthlyIncome.
+##### 11. IsBorrowerHomeowner
+##### 12. MonthlyLoanPayment.
+##### 13. LoanOriginationQuarter.
+
+
+## Univariate Plots Section
+```{r , echo=FALSE, functions}
+bar_plot_percent<- function(variable, title,xlabel){
+  ggplot(aes(x = variable), data = loan_data)+
+  geom_bar(fill= "#91bfff",colour="#074e69", stat = "count")+ 
+  scale_fill_brewer() + theme(axis.text.x = element_text(angle = 30, hjust = 1))+
+  geom_text(aes(label = scales::percent(..count../sum(..count..)), 
+                y= ..count..),
+            stat= "count", vjust = -.5)+
+  ggtitle(title)+
+  theme_minimal()+
+    labs(x = xlabel)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))}
+
+#flip_bar_plot function plot the flip bar plots
+flip_bar_plot<- function(variable, title, xlab){
+  ggplot(aes(x =variable), data = loan_data)+
+  geom_bar(fill= "#91bfff",colour="#074e69") + 
+  theme_minimal()+
+  coord_flip()+
+  ggtitle(title)+
+    labs(x = xlab)
+    
+  }
+#bar_plot function to plot all bar plots by taking the variable, plot title and the x label 
+bar_plot<- function(variable, title, xlabel){
+  ggplot(aes(x =variable), data = loan_data)+
+  geom_bar(fill= "#91bfff",colour="#074e69")+
+  theme_minimal()+
+  ggtitle(title)+
+    labs(x = xlabel)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))}
+
+
+histo_plot <- function(variable, title, xlabel,binwidth = NULL){
+  ggplot(aes(x = variable), data = loan_data)+
+  geom_histogram(fill= "#91bfff",colour="#074e69",binwidth=binwidth)+
+  theme_minimal()+
+  ggtitle(title)+
+    labs(x = xlabel)
+}
+```
+
+####The highest number of Borrowers in states.
+>The BorrowerState: The two letter abbreviation of the state of the address of the borrower at the time the Listing was created.
+
+
+```{r echo=FALSE, borrower_states }
+#az, fl, ga, ny, tx
+#bar_plot(loan_data$BorrowerState,"loan_data$BorrowerState","loan_data$BorrowerState")
+#states = loan_data$BorrowerState
+global <- map_data("state")
+
+ny <- filter(global, region == "new york")
+tx <- filter(global, region == "texas")
+az <- filter(global, region == "arizona")
+fl <- filter(global, region == "florida")
+ga <- filter(global, region == "georgia")
+
+ggplot(data = global, aes(x=long, y = lat, group = group)) + 
+  geom_polygon( fill = "#f0f8ff", color = "white")+
+  geom_polygon(data = ny, aes(x=long, y=lat, group = group),fill="#91bfff") +
+  geom_polygon(data = tx, aes(x=long, y=lat, group = group),fill="#91bfff")+
+  geom_polygon(data = az, aes(x=long, y=lat, group = group),fill="#91bfff")+
+  geom_polygon(data = fl, aes(x=long, y=lat, group = group),fill="#91bfff")+
+  geom_polygon(data = ga, aes(x=long, y=lat, group = group),fill="#91bfff")+
+  ggtitle(" The highest number of Borrowers in states")+
+  theme_minimal()
+  
+# the Borrowers count in each state.
+
+```
+
+#####The highest number of Borrowers in Arizona, Texas, Georgia, Florida and Newyork.These states also have the highest population in USA.
+
+
+>The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, Past Due (1-15 days), Past Due (16-30 days), Past Due (31-60 days),
+Past Due (61-90 days), and Past Due (91-120 days) 
+
+```{r echo=FALSE, loan_status}
+remove_nulls<- na.omit(loan_data, cols="LoanStatus")
+loan_data$recod_loan_status <- recode(loan_data$LoanStatus, "c('FinalPaymentInProgress', 'Current')='Current';
+c('Past Due (1-15 days)', 'Past Due (>120 days)','Past Due (16-30 days)','Past Due (31-60 days)','Past Due (61-90 days)','Past Due (91-120 days)') = 'Past Due'")
+
+#"c( 'Completed','Current','FinalPaymentInProgress','Defaulted')='Completed';c('Cancelled', 'Past Due (1-15 days)','Past Due (16-30 days)','Past Due (31-60 days)','Past Due (61-90 #days)','Past Due (91-120 days)') = 'Past Due'; ('Chargedoff')='Chargedoff'")
+bar_plot_percent(loan_data$recod_loan_status, "The Loan status", "Loan status")
+
+
+```
+
+#####This plot describe the loan status. There are many status in past due there are 6 categories the total of these is around 2%, the most borrowers trying to completed their own loans because that might expose them to paying more during the delay. 
+
+>IncomeRange: The income range of the borrower at the time the listing was created.
+
+```{r echo=FALSE, income}
+#Monthly brrowes income in range
+
+#removing not employed and 0$ there is not loans for it.
+loan_data <- subset(loan_data, ! IncomeRange %in% c("Not employed","Not displayed","$0"))
+flip_bar_plot(loan_data$IncomeRange," The brrowers income in range", "Income Range")
+
+```
+
+
+#####The most borrowers income is between 25,000USD to 74,999USD.
+
+>Term: The length of the loan expressed in months.
+
+```{r echo=FALSE, term}
+loan_data$Term <- factor(loan_data$Term)
+
+bar_plot_percent(loan_data$Term, "length of the loan expressed in months", "Loan Terms")
+```
+
+
+#####There are three term options 12 months, 36 months or 60 months. The loans with 36 length is the most liked to take with 75.2%  and then 60 length of months with 23.3% the percentage of borrwers can take loans in 12 months is 1.5% because it is short length period to complete loan.
+
+>ListingCategory: The category of the listing that the borrower selected when posting their listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
+
+```{r, echo=FALSE, category_loan}
+#convert to factor
+loan_data$ListingCategory..numeric. <- factor(loan_data$ListingCategory..numeric.)
+
+#change factoer levels
+levels(loan_data$ListingCategory..numeric.) <- c("Not Available"," Debt Consolidation"," Home Improvement", "Business","Personal Loan","Student Use", "Auto", "Other", "Baby&Adoption", "Boat","Cosmetic Procedure","Engagement Ring", "Green Loans","Household Expenses","Large Purchases","Medical/Dental",  "Motorcycle","RV", "Taxes", "Vacation", "Wedding Loans")
+
+loan_data <- subset(loan_data, ! ListingCategory..numeric. %in% c("Not Available","Other"))
+ggplot(aes(x=reorder(ListingCategory..numeric., table(ListingCategory..numeric.)[ListingCategory..numeric.])), data = loan_data)+
+  geom_bar(fill= "#91bfff",colour="#074e69") + 
+  theme_minimal()+
+  coord_flip()+
+  ggtitle("The borrower selected category")+
+    labs(x = "The laon categories")
+```
+
+
+#####This plot describe the loan catigories or the purpose the borrowers get the loans for it, the most purpose loan is Dept Consolidation and then home improvement.
+
+
+>Recomendations: Number of recommendations the borrower had at the time the listing was created.
+
+```{r echo=FALSE, recomendations}
+#Recommendations
+bar_plot(loan_data$Recommendations,"The Number of recommendations", "Recommendations" )
+```
+
+
+#####As we see in this plot most people comes to take a loan without any recomedations.
+
+>BorrowerAPR: The Borrower's Annual Percentage Rate (APR) for the loan.
+An annual percentage rate (APR) is the annual rate charged for borrowing or earned through an investment. 
+APR is expressed as a percentage that represents the actual yearly cost of funds over the term of a loan.
+
+>BrrowerRate: The Borrower's interest rate for this loan. 
+or intrest rate 
+
+```{r echo=FALSE, borrowerapr}
+APR <- histo_plot(loan_data$BorrowerAPR, "The Borrower's Annual Percentage Rate (APR) for the loan ", "BorrowerAPR",0.01)
+Rate <- histo_plot(loan_data$BorrowerRate, "The Borrower's interest rate for this loan ", "Borrower Rate",0.01)
+
+
+summary(loan_data$BorrowerAPR)
+summary(loan_data$BorrowerRate)
+
+grid.arrange(APR,Rate,ncol=1)
+```
+
+
+#####These plots are distrbuted normally, and the BorrowerAPR higher than the BorrowerRate in general. 
+
+
+>TotalProsperLoans: Number of Prosper loans the borrower at the time they created this listing. 
+This value will be null if the borrower had no prior loans. 
+
+```{r echo=FALSE, borrowrloans}
+#change dtype to factor
+loan_data$TotalProsperLoans <- factor(loan_data$TotalProsperLoans)
+#bar_plot_percent(loan_data$TotalProsperLoans,"Number of borrower loans ","Total Prosper Loans")
+#This value will be null if the borrower had no prior loans
+
+
+loan_data.clean<- na.omit(subset(loan_data, select = c(TotalProsperLoans)))
+bar_plot_percent(loan_data$TotalProsperLoans, "Total Prosper Loans", "Total Prosper Loans")
+
+
+    
+```
+
+
+#####The 20.6% of borrowers already have one prior loan and they come to get another loan, 6% of borrowes have two loans, and 2% have three loans but more than 70% of borrowers haven't the prior loans.The ratio is low for those who can take more than one loan at the same time. Especially more than three loans are almost no less than 1%.
+
+>StatedMonthlyIncome:The monthly income the borrower stated at the time the listing was created.
+
+```{r echo=FALSE, StatedMonthlyIncome}
+
+beforeLog <-histo_plot(loan_data$StatedMonthlyIncome,"The borrower monthly income","StatedMonthlyIncome",1000)
+#long tail plot 
+
+afterLog<-histo_plot(log10(loan_data$StatedMonthlyIncome),"The borrower monthly income","StatedMonthlyIncome log10",0.05)
+
+grid.arrange(beforeLog,afterLog)
+```
+
+
+#####The StatedMonthlyIncome in first plot with long tail and I do some transformation by taking log10 and the second plot distributed normally
+
+>IsBorrowerHomeowner: A Borrower will be classified as a homowner if they have a mortgage on their credit profile or provide documentation confirming they are a homeowner.
+
+```{r echo=FALSE, homeOwn}
+bar_plot_percent(loan_data$IsBorrowerHomeowner, "Borrower Home owner", "IsBorrowerHomeowner")
+```
+
+
+##### The plot shows the percentage of the borrowers have their own home or not. As we see it isn't highly different between them is 2.94%. 
+the 53.38% of borrowers have a home and 46.62% haven't home.\
+
+>MonthlyLoanPayment: The scheduled monthly loan payment.
+
+```{r echo=FALSE, count}
+#max(loan_data$MonthlyLoanPayment)
+#870
+#min(loan_data$MonthlyLoanPayment)
+#0
+histo_plot(loan_data$MonthlyLoanPayment,"The Monthly Loan Payment","Monthly Loan Payment",30)
+#MonthlyLoanPayment
+
+```
+
+
+>LoanOriginationQuarter:The quarter in which the loan was originated. 
+
+```{r echo=FALSE, quarter}
+bar_plot(loan_data$LoanOriginationQuarter,"Loan Origination Quarter","Loan Origination Quarter")
+```
+
+
+#### 2013 is the year in which the largest number of loans was originated through on the plot and the highest four peaks, three of them were in the year 2013.
+
+
+# Univariate Analysis
+
+### The structure of your dataset
+#####This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), \
+current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.\
+
+### The main features of interest in the dataset
+##### ListingCategory or the purpose of the loan: is to show the reasons a borrowers is seeking a loan, that also shows us the most cases the people takes loans for it.
+
+##### BorrowerState: the prosper bank have many branches across the US and by analyzing this varaiable we found the number of borrowers in each state.
+
+##### TotalProsperLoans: Through this variable which we can estimate the percentage of the person who has already received a loan will come again and get another loan.
+
+#### the features I investigated. 
+##### I remove all null or N/A values from the databse, In the TotalProsperLoans there are null value for the people don't have any prior loans but in my investigation I just want to know the percentage of the peploe they have prior loans and come to get another.
+##### Convert ListingCategory..numeric.  to factor 
+
+
+
+# Bivariate Plots Section
+
+##### Loan Status and Income Range
+##### loan status and MonthlyLoanPayment
+##### loanStatus and IsBorrowerHomeowner 
+##### IncomeRange and ListingCategory
+##### The BorrowerRate and AvailableBankcardCredit
+##### The StatedMonthlyIncome and MonthlyLoanPayment 
+##### The StatedMonthlyIncome and Occupation
+
+```{r echo=FALSE, functions_2}
+
+bar_plot_bi <- function(X,Y,Fill = NULL, title, xlabel, cols= NULL){
+  ggplot() + geom_bar(aes(x=X,y = Y,fill = Fill),
+                          data = loan_data,
+                          stat="identity")+
+  theme_minimal()+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())+
+  ggtitle(title)+
+    labs(x = xlabel)+
+  scale_fill_manual(values = cols)+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+}
+
+point_plot_bi <- function (X,Y,Method = NULL,Color= NULL,Title,Xlabel,Ylabel,Xlim)
+  {
+ ggplot(loan_data,aes(x=X, y = Y))+ 
+    geom_point(stat="identity")+
+  geom_smooth(method=Method ,color=Color )+
+  theme_minimal()+
+  xlim(0,Xlim)+
+  ggtitle(Title)+
+    labs(x =Xlabel, y = Ylabel)
+}
+
+boxplot_bi <- function(X,Y,title,Xlabel,Ylabel){
+  ggplot(loan_data,aes(x=X, y = Y))+ 
+    geom_boxplot(outlier.colour = "red", outlier.shape = 1)+
+  theme_minimal()+
+  ggtitle(title)+
+    labs(x = Xlabel, y= Ylabel)
+  
+}
+
+
+```
+
+
+#### Loan Status and Income Range
+>IncomeRange: The income range of the borrower at the time the listing was created.
+The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress, PastDue.
+
+```{r echo=FALSE,LoanStatus_IncomeRange }
+#The relation between LoanStatus and IncomeRange
+cols <- c("$1-24,999" = "#00ffff", "$100,000+" = "#91bfff", "$25,000-49,999" = "#5f9ea0", "$50,000-74,999" = "#7b68ee", "$75,000-99,999" = "#074e69")
+bar_plot_bi(loan_data$recod_loan_status,loan_data$IncomeRange,loan_data$IncomeRange, "The Loan Status and Income Range", "Loan status", cols)
+```
+
+
+#####The most borrowers are current or completed thier loans, and some of them in charged off or past Due. The borrowers with high income which +100,000 USD
+and The borrowers with medium income which is between (25,000 USD and 74,999 USD) have the highest loans  and I think from my point of view this a large amount of the loan with their monthly income. The relation is when the borrower has high income can take loans and completed on time but when the borrower has low-income range may can't complete the loan on time.\ 
+
+
+#### ListingCategory..numeric. and MonthlyLoanPayment
+
+```{r echo=FALSE, category_payment}
+
+loan_data <- subset(loan_data, ! ListingCategory..numeric. %in% c("Not Available","Other"))
+ggplot(loan_data,aes(x=ListingCategory..numeric.,y = MonthlyLoanPayment) )+ 
+    geom_bar(position="dodge", stat="identity",fill= "#91bfff")+
+  theme_minimal()+
+  ggtitle("The Loan purpose and Monthly loan payment")+
+    labs(x = "ListingCategory ")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+#Medical/Dental, Home Improvement, Dept consdiloation and green loans
+
+
+```
+
+
+###### The  Medical/Dental, Debt Consolidation, Green loans and Home improvement are the most expensive loans which have the highest monthly payment. The home improvement and student use are the most taken loans depends on the preivous plot in the Univariate section loans and are often loans taken for once in a lifetime.\
+
+#### IsBorrowerHomeowner and loanStatus
+
+> EmploymentStatus: The employment status of the borrower at the time they posted the listing.
+
+
+```{r echo=FALSE, home_status}
+cols <- c("TRUE" = "#87cefa", "FALSE" = "#074e69")
+bar_plot_bi(loan_data$EmploymentStatus,loan_data$IsBorrowerHomeowner,loan_data$IsBorrowerHomeowner,"The Employment Status and BorrowerHomeowner", "Loan status", cols)
+
+```
+
+
+##### In each status the borrowers have thier own homes more than have not home. In general, from a plot, ~ 64% of employed borrowers have their own homes. This is due to my view of the sense of independence and financial security of those who own their homes\ 
+
+
+#### Income Range and ListingCategory
+```{r echo=FALSE, income_range_category}
+cols <- c("$1-24,999" = "#87cefa", "$100,000+" = "#91bfff", "$25,000-49,999" = "#5f9ea0", "$50,000-74,999" = "#7b68ee", "$75,000-99,999" = "#074e69")
+bar_plot_bi(loan_data$ListingCategory..numeric.,loan_data$IncomeRange,loan_data$IncomeRange,"Loan Purpose and Income Range", "The laon categories", cols)
+```
+
+
+##### The loans for student use take more by low and medium income range, The borrowers with +100,000 USD They are the least receiving loans. The student use loans are most taken by borrowers their income is between 25,000 - 49,000 and 50,000 - 74,000. through the plot the Borrowers with high-income range who are above $ 100,000 they tend to take Dept Consolidation loans more than any other loan, This is due to their high income which enables them to take several loans and the ability to repay them. But the Low-income range borrowers they are taking loans little, perhaps because of their low income, which is not enough.
+
+#### The BorrowerRate and AvailableBankcardCredit
+
+>AvailableBankcardCredit: The total available credit via bank card at the time the credit profile was pulled.
+
+
+```{r echo=FALSE, BorrowerRate_AvailableBankcardCredit,warning=FALSE}
+#the relation between BorrowerRate or intrest rate with AvailableBankcardCredit.
+point_plot_bi(loan_data$AvailableBankcardCredit,loan_data$BorrowerRate,'lm','red',"The BorrowerRate and AvailableBankcardCredit","Available Bank card Credit","Borrower Rate",70000)
+```
+
+
+##### Through this plot I noticed that the line is diagonal and the relationship is inverse between the AvailableBankcardCredit and the interest rate (BorrowerRate) When the AvailableBankcardCredit is increase, the interest rate (BorrowerRate) decrease.\
+
+#### The MonthlyLoanPayment and StatedMonthlyIncome
+```{r echo=FALSE,MonthlyLoanPayment_StatedMonthlyIncome, warning=FALSE}
+#income range and years 
+#year and loan purpose
+#StatedMonthlyIncome and MonthlyLoanPayment
+
+point_plot_bi(loan_data$StatedMonthlyIncome,loan_data$MonthlyLoanPayment,'lm','#91bfff',"The Stated Monthly Income and Monthly Loan Payment","Stated Monthly Income","Monthly Loan Payment",20000)
+
+```
+
+
+##### The correlation between the statedMonthlyIncome and MonthlyLoanPayment is moderate when the incom increase the the montly loan payment increase too.
+
+
+#### The StatedMonthlyIncome and Occupation
+```{r echo=FALSE, fig.height=8, fig.width=10, occu}
+
+#StatedMonthlyIncome and Occupation
+
+cols <- c("Computer programmer" = "#00ffff", "Teacher" = "#91bfff", "Engineer - Mechanical" = "#5f9ea0")
+#removing other and professional options, because is not meaningful jobs 
+
+loan_data <- subset(loan_data, ! Occupation %in% c("Other","Professional"))
+
+ggplot() + geom_bar(aes(x=Occupation, y = log10(StatedMonthlyIncome)),
+                          data = loan_data,
+                          stat="identity")+
+  theme_minimal()+
+  ggtitle("The Stated Monthly Income and Occupation")+
+    labs(x = "Occupations",
+         y = "Stated Monthly Income")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+   scale_fill_manual(values=cols)
+```
+
+
+#### The highest stated monthly income is taken by Computer programmer and Engineer - Mechanical.
+
+
+#### BorrrowerRate and Term
+```{r, echo=FALSE, term_22}
+#BorrowerRate and term of loans
+boxplot_bi(loan_data$Term, loan_data$BorrowerRate, "The Borrower Rate and Terms of loan","Loan Terms","BorrowerRate(intrest rate)")
+```
+
+
+##### The intrest rate in 12 months length between 1% and 2% and the upper whisker is ~2.5%, The 36 month length slightly higher than intrest rate than 12 and 60 months
+
+
+####Monthly Loan Payment and years 
+
+```{r echo=FALSE, fig.width=9, warning=FALSE, time}
+#split date column to year, day and month
+loan_data$newDate <- as.Date.character(loan_data$LoanOriginationDate, format='%m/%d/%Y')
+#create a new variable to store the years 
+loan_data <- loan_data %>% 
+  mutate(newDate = ymd(newDate)) %>% 
+  mutate_at(vars(newDate), funs(year, month, day))
+
+
+year_payment <- function(){
+
+  ggplot(loan_data, aes(year, MonthlyLoanPayment)) + 
+  geom_line( stat = 'summary', fun.y = mean, color = "#074e69") + 
+  ggtitle("The avergae of Monthly loan payment for loans over a year")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme_minimal()+
+  labs(y = "Monthly Loan Payment ($)", x= "Years")
+}
+year_payment()
+ 
+```
+
+
+##### From 2008 to 2011 the monthly payment rate for loans was volatile, but the jump was in 2012 and continued to rise. Which I believe is due to the improved living and increased needs.
+
+> ProsperRating..numeric.:The Prosper Rating assigned at the time the listing was created: 0 - N/A, 1 - HR, 2 - E, 3 - D, 4 - C, 5 - B, 6 - A, 7 - AA.  Applicable for loans originated after July 2009.
+
+```{r, echo=FALSE, warning=FALSE, year_rate}
+ggplot(loan_data, aes(year, ProsperRating..numeric.)) + 
+  geom_line( stat = 'summary', fun.y = mean, color = "#074e69") + 
+  ggtitle("The avergae of Monthly loan payment for loans over a year")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme_minimal()+
+  labs(y = "ProsperRating..numeric.", x= "Years")
+
+```
+
+
+# Bivariate Analysis
+
+##### Loan Status and Income Range
+##### ListingCategory..numeric. and MonthlyLoanPayment
+##### EmployementStatus and IsBorrowerHomeowner
+##### IncomeRange and ListingCategory..numeric.
+##### Available bankcredit card and borrowerRate
+##### MonthlyLoanPayment and StatedMothlyIncome
+##### StatedMothlyIncome and Occupation
+##### MonthlyLoanPayment and terms
+##### BorrrowerRate and Term
+##### Monthly Loan Payment and years 
+
+
+###The relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+##### The relation between BorrowerRate and AvailableBankcardCredit  is intresting, I was thought when AvailableBankcardCredit high borrowers may take risks or take high-interest rate of loans, but through the plot, the opposite is true, so that when a Availablebankcreditcard is less willing to take high-interest rate loans.
+##### StatedMonthlyIncome and Occupation: The highest stated monthly income is taken by Computer programmer and Engineer - Mechanical.
+##### Monthly Loan Payment and years :this relation shows how the monthly paymnt of loans increases over the years, this may mean a rise in salaries and a rise in the value of loans
+
+##### The strongest relationship I found is the relation between AvailableBankcardCredit and intrest rate.
+
+
+# Multivariate Plots Section
+
+#### MonthlyLoanPayment, IsBorrowerHomeowner and years.
+
+```{r echo=FALSE, fig.width=8, biva, warning=FALSE}
+home_year_payment <- function(){
+
+  group = loan_data$IsBorrowerHomeowner
+
+ggplot(loan_data, aes(year, StatedMonthlyIncome, group = IsBorrowerHomeowner )) + 
+  geom_line( stat = 'summary', fun.y = mean ,aes(colour = group), linetype = 2) + 
+  ggtitle("The Stated Monthly Income and Borrower's home in years")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme_minimal()+
+  labs(y = "Stated Monthly Income ($)", x= "Years")
+}
+home_year_payment()
+
+```
+
+
+##### This plot, describe the relationship among year, IsBorrowerHomeowner and StatedMonthlyIncome. The borrowers with highly income have their own homes, But from 2013 the borrowers own their home decreased and the borrowers haven't own their home increased.
+
+
+#### The Employment status and Borrower's home in years
+
+```{r echo=FALSE, fig.width=9, multi_2,  warning=FALSE}
+
+home_status_year <- function(){
+
+  ggplot(loan_data, aes(year, EmploymentStatus, group = IsBorrowerHomeowner,colour = IsBorrowerHomeowner)) + 
+  geom_point(stat="identity", size = 3) + 
+  ggtitle("The Employment status and Borrower's home in years")+
+  theme_minimal()+
+  labs(y = "Employment Status", x= "Years")
+}
+
+home_status_year()
+```
+
+
+##### The employed borrowers have their own houses,  before 2011 the borrowers have their own homes more than haven't owned home
+
+#### The avergae of Monthly loan payment for loans over a year
+
+
+```{r echo=FALSE, year_rate_pay, warning=FALSE}
+
+ggplot(loan_data, aes(year, MonthlyLoanPayment, group = BorrowerRate)) + 
+  geom_point(stat = "identity", size = 2, aes(fill = BorrowerRate, color = BorrowerRate )) + 
+  ggtitle("The avergae of Monthly loan payment for loans over a year")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme_minimal()+
+  labs(y = "Monthly Loan Payment ($)", x= "Years")
+
+```
+
+
+##### The monthly loan payemnt is increased over years, when the payment increase the borrower rate (intrest rate) decreased.
+
+#### The Prosper rating and intrest rate in years
+```{r, echo=FALSE, warning=FALSE ,year_rate_2}
+year_rate_intrest <- function (){
+  ggplot(loan_data, aes(year, ProsperRating..numeric., group = year, colour = BorrowerRate )) + 
+  geom_point(stat="identity", size = 3) + 
+  ggtitle("The Prosper rating and intrest rate in years ")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme_minimal()+
+  labs(y = "Prosper Rating", x= "Years")
+}
+
+year_rate_intrest()
+```
+
+
+
+##### The borrwer rate (intrest rate) for high rating is less than the borrower rate for low rating, Prosper Rating of A or 6 have an interest rate of 1% and the rating 3 or D have 3% intrest rate.
+
+# Multivariate Analysis
+##### Investigate the relationships among three or more variables which is  
+##### MonthlyLoanPayment, IsBorrowerHomeowner and years.
+#### The Employment status and Borrower's home in years.
+#### The avergae of Monthly loan payment for loans over a year.
+#### The Prosper rating and intrest rate in years
+
+## Final plots
+
+##### Plot 1. 
+```{r echo = FALSE, p1, warning=FALSE}
+year_payment()
+```
+
+
+##### In this plot, I studied the relationship between MonthlyLoanPayment and Years to describe how the monthly loan payment increased through the years.
+
+##### Plot 2. 
+
+```{r echo = FALSE, p2, warning=FALSE}
+home_year_payment()
+```
+
+##### This plot, describe the relationship among year, IsBorrowerHomeowner and StatedMonthlyIncome. The borrowers with highly income have their own homes.
+
+##### Plot 3. 
+
+```{r echo = FALSE, p3, warning=FALSE}
+year_rate_intrest()
+```
+
+
+##### This plot, shows the relationship between borrwer rate, Prosper rating and years. The borrwer rate (intrest rate) for high rating is less than the borrower rate for low rating, Prosper Rating of A or 6 have an interest rate of 1% and the rating 3 or D have 3% intrest rate.
+
+
+## Reflection
+I was very interested in analyzing this dataset. The prosperLoanData is a dataset from Prosper, Prosper was founded in 2005 as the first peer-to-peer lending marketplace in the United States. Since then, Prosper has facilitated more than $14 billion in loans to more than 870,000 people. 
+The prosperLoanData contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
+First I looked to the dataset using (str and summary functions) to get the structure and five number summary of the variables, then I read the variables definitions and some of the variables I searched to more information to explored it, the dataset was contained missing values that need to clean it.
+for the first section I install needed packages, libraries and remove missing data (NA's), there are some bugs I faced when coding like when converting between string and numeric formats, convert from numeric to factor and to extract the dates and added it as three separate variables.
+In Univariate section investigate 13 variables out of 81 and to know more about these variables I plot each of them by visualization plots using (ggplot and geom layers), To remove repetitive codes I create functions that make coding easy. The second section is about the relationship between variables, for example, the relation between Stated monthly income and borrowers occupation. The last section is about the relationship between more than two variables to represent how these variables are related.
+Before this project, I didn't know anything about loans of banks and how it works and this makes this project a little difficult to me, I spent many hours for searching about variables and watch videos about loans it was a challenge but I interested in exploring and analyzing this dataset.
+
+#####Acknowledgements:
+1. [creating maps in R using ggplot2 and maps libraries](https://www.youtube.com/watch?v=2mk_V4d4Rds)
+2. [creating maps in R using ggplot2 and maps libraries](http://www.michaeljgrogan.com/creating-maps-ggplot2-libraries/)
+3. [colour-specific-states](//stackoverflow.com/questions/46978161/colour-specific-states-on-a-us-map)
+4. [barplot in ggplot2](http://www.sthda.com/english/wiki/ggplot2-barplots-quick-start-guide-r-software-and-data-visualization)
+5. [geom_text](https://ggplot2.tidyverse.org/reference/geom_text.html)
+6. [ggplot-replace-count-with-percentage-in-geom-bar](https://stackoverflow.com/questions/24776200/ggplot-replace-count-with-percentage-in-geom-bar/24777521)
+7. [convert columns to factor](https://stackoverflow.com/questions/13613913/how-do-i-convert-certain-columns-of-a-data-frame-to-become-factors)
+8. [Annual Percentage Rate - APR ](https://www.investopedia.com/terms/a/apr.asp)
+9. [intrest rate](https://www.investopedia.com/terms/i/interestrate.asp)
+10. [plot labels- labs](https://ggplot2.tidyverse.org/reference/labs.html)
+11. [Stacked bar plot](https://www.r-graph-gallery.com/stacked-barplot/)
+12. [grouped-barplot-with-ggplot2](https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2/)
+13. [rotate x-axis labels](https://stackoverflow.com/questions/1330989/rotating-and-spacing-axis-labels-in-ggplot2)
+14. [combining factor levels](https://stackoverflow.com/questions/36568758/combining-factor-level-in-r/39937480)
+15. [bar plot](https://stackoverflow.com/questions/5208679/order-bars-in-ggplot2-bar-graph)
+16. [Remove NA](https://statistical-programming.com/na-omit-r-example/)
+
+17 .[Prosper](https://www.prosper.com/about)
+
