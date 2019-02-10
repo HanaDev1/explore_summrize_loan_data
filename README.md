@@ -9,3 +9,19 @@ current loan status, borrower income, borrower employment status, borrower credi
 and the latest payment information.
 
 
+# Software and libraries:
+* ggplot2
+* plyr
+* gridExtra
+* maps
+* ggrepel
+* dplyr
+* forcats
+* car
+* tidyr
+* lubridate
+* zoo
+* scales
+* reshape2
+
+
